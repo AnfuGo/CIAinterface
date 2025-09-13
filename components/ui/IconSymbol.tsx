@@ -1,41 +1,42 @@
-// Fallback for using MaterialIcons on Android and web.
+// IconSymbol.tsx
+import React from 'react';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import type { ComponentProps } from 'react';
+import type { OpaqueColorValue, StyleProp, TextStyle } from 'react-native';
 
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { SymbolWeight, SymbolViewProps } from 'expo-symbols';
-import { ComponentProps } from 'react';
-import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
+type IconMapping = Record<string, ComponentProps<typeof MaterialIcons>['name']>;
 
-type IconMapping = Record<SymbolViewProps['name'], ComponentProps<typeof MaterialIcons>['name']>;
-type IconSymbolName = keyof typeof MAPPING;
-
-/**
- * Add your SF Symbols to Material Icons mappings here.
- * - see Material Icons in the [Icons Directory](https://icons.expo.fyi).
- * - see SF Symbols in the [SF Symbols](https://developer.apple.com/sf-symbols/) app.
- */
-const MAPPING = {
+// Mapeamento de SF Symbols para Material Icons
+const MAPPING: IconMapping = {
   'house.fill': 'home',
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
-} as IconMapping;
+};
+
+type IconSymbolProps = {
+  name: keyof typeof MAPPING;
+  size?: number;
+  color?: string | OpaqueColorValue;
+  style?: StyleProp<TextStyle>;
+};
 
 /**
- * An icon component that uses native SF Symbols on iOS, and Material Icons on Android and web.
- * This ensures a consistent look across platforms, and optimal resource usage.
- * Icon `name`s are based on SF Symbols and require manual mapping to Material Icons.
+ * Um componente de ícone que usa Material Icons em todas as plataformas,
+ * substituindo o uso de Expo e SF Symbols.
  */
 export function IconSymbol({
   name,
   size = 24,
-  color,
+  color = 'black',
   style,
-}: {
-  name: IconSymbolName;
-  size?: number;
-  color: string | OpaqueColorValue;
-  style?: StyleProp<TextStyle>;
-  weight?: SymbolWeight;
-}) {
-  return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
+}: IconSymbolProps) {
+  return (
+    <MaterialIcons
+      name={MAPPING[name]}   // pega o ícone correto do mapeamento
+      size={size}
+      color={color}
+      style={style as any}   // cast para ignorar conflito de tipagens
+    />
+  );
 }

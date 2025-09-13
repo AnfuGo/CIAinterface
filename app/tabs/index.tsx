@@ -1,15 +1,16 @@
+import React from 'react';
+import { PermissionsAndroid, Pressable, StyleSheet, Linking, Image, Alert } from 'react-native';
 import { HelloWave } from 'components/HelloWave';
 import ParallaxScrollView from 'components/ParallaxScrollView';
 import { ThemedText } from 'components/ThemedText';
 import { ThemedView } from 'components/ThemedView';
-import { Image } from 'expo-image';
-import React from 'react';
-import { PermissionsAndroid, Platform, Pressable, StyleSheet } from 'react-native';
+import ImagemColarIA from 'assets/images/ImagemColarIA.png';
 
+// Função para logar status das permissões
 const handlePermissionStatus = (permission: string, status: string) => {
   switch (status) {
     case PermissionsAndroid.RESULTS.GRANTED:
-      console.log(` Permissão concedida para ${permission}`);
+      console.log(`Permissão concedida para ${permission}`);
       break;
     case PermissionsAndroid.RESULTS.DENIED:
       console.log(`Permissão negada para ${permission} (pode pedir novamente)`);
@@ -23,44 +24,57 @@ const handlePermissionStatus = (permission: string, status: string) => {
   }
 };
 
+// Função para pedir permissões Bluetooth no Android
 export const BluetoothPermiss = async () => {
-  if (Platform.OS === 'android') {
-    try {
-      const permissions = [
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION, // necessário para BLE
-      ];
+  try {
+    const permissions = [
+      PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+      PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+      PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION, // necessário para BLE
+    ];
 
-      const results = await PermissionsAndroid.requestMultiple(permissions);
+    const results = await PermissionsAndroid.requestMultiple(permissions);
 
-      let allGranted = true;
+    let allGranted = true;
+    let blockedPermanently = false;
 
-      for (const perm of permissions) {
-        handlePermissionStatus(perm, results[perm]);
-        if (results[perm] !== PermissionsAndroid.RESULTS.GRANTED) {
-          allGranted = false;
-        }
+    for (const perm of permissions) {
+      handlePermissionStatus(perm, results[perm]);
+
+      if (results[perm] !== PermissionsAndroid.RESULTS.GRANTED) {
+        allGranted = false;
       }
-
-      if (allGranted) {
-        console.log(' Todas permissões Bluetooth concedidas');
-        return true;
-      } else {
-        console.log(' Nem todas permissões Bluetooth foram concedidas');
-        return false;
+      if (results[perm] === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+        blockedPermanently = true;
       }
-    } catch (err) {
-      console.error('Erro ao pedir permissões Bluetooth:', err);
+    }
+
+    if (blockedPermanently) {
+      // Mostra Alert para guiar o usuário
+      Alert.alert(
+        'Permissões necessárias',
+        'Algumas permissões Bluetooth estão bloqueadas permanentemente. Você precisa habilitá-las manualmente nas configurações do app.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Abrir Configurações', onPress: () => Linking.openSettings() },
+        ]
+      );
       return false;
     }
-  } else {
-    console.log('BluetoothPermiss: Apenas necessário no Android');
-    return true;
+
+    if (allGranted) {
+      console.log('Todas permissões Bluetooth concedidas');
+      return true;
+    } else {
+      console.log('Nem todas permissões Bluetooth foram concedidas');
+      return false;
+    }
+  } catch (err) {
+    console.error('Erro ao pedir permissões Bluetooth:', err);
+    return false;
   }
 };
-
 
 export default function HomeScreen() {
   return (
@@ -68,35 +82,37 @@ export default function HomeScreen() {
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#eee' }}
       headerImage={
         <Image
-          source={require('@/assets/images/ImagemColarIA.png')}
+          source={require('../../assets/images/ImagemColarIA.png')}
           style={styles.reactLogo}
         />
-      }>
+      }
+    >
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Bem Vindo a interface CIA</ThemedText>
       </ThemedView>
+
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="default">Ative o bluetooth</ThemedText>
         <Pressable
-              onPress={BluetoothPermiss}
-              style={[styles.button2, { backgroundColor: 'blue' }]}
-            >
-              <ThemedText style={styles.buttonText}>AQUI</ThemedText>
-            </Pressable>
+          onPress={BluetoothPermiss}
+          style={[styles.button2, { backgroundColor: 'blue' }]}
+        >
+          <ThemedText style={styles.buttonText}>AQUI</ThemedText>
+        </Pressable>
         <HelloWave />
       </ThemedView>
+
       <ThemedView style={styles.titleContainer}>
         <Pressable
-              onPress={BluetoothPermiss}
-              style={[styles.caixa, { backgroundColor: 'blue' }]}
-            >
-              <ThemedText style={styles.buttonText}>Conecte-se ao dispositivo
-                CLIQUE AQUI!
-              </ThemedText>
-            </Pressable>
+          onPress={BluetoothPermiss}
+          style={[styles.caixa, { backgroundColor: 'blue' }]}
+        >
+          <ThemedText style={styles.buttonText}>
+            Conecte-se ao dispositivo{"\n"}CLIQUE AQUI!
+          </ThemedText>
+        </Pressable>
       </ThemedView>
     </ParallaxScrollView>
-    
   );
 }
 
@@ -105,10 +121,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
   },
   reactLogo: {
     height: 450,

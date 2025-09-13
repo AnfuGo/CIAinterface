@@ -6,12 +6,12 @@ module.exports = {
       {
         root: ['./'],
         alias: {
-          '@': './src',
           app: './app',
+          assets: './assets'
         },
-        extensions: ['.ts', '.tsx', '.js', '.jsx', '.json']
+        extensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.png', '.jpg', '.jpeg', '.svg', '.gif']
       }
     ],
-    'react-native-reanimated/plugin', // 👈 tem que ser o último plugin
-  ],
+    'react-native-reanimated/plugin' // 👈 tem que ser o último plugin
+  ]
 };

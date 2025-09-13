@@ -11,15 +11,18 @@ import {
   SafeAreaProvider,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-import TabLayout from 'app/tabs/_layout.tsx';
+import TabsNavigator from './app/TabsNavigator';
 import HomeScreen from 'app/tabs/index.tsx';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+
+
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
 
   return (
     <SafeAreaProvider>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-        <HomeScreen/>;
+        <TabsNavigator/>
     </SafeAreaProvider>
   );
 }

@@ -6,6 +6,26 @@ import { ThemedText } from 'components/ThemedText';
 import { ThemedView } from 'components/ThemedView';
 import ImagemColarIA from 'assets/images/ImagemColarIA.png';
 
+export const CameraPermission = async () => {
+  
+  const permission = PermissionsAndroid.PERMISSIONS.CAMERA;
+  const result = await PermissionsAndroid.request(permission);
+
+  if (result === PermissionsAndroid.RESULTS.GRANTED) return true;
+  if (result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+    Alert.alert(
+      'Permissão necessária',
+      'A permissão de câmera foi bloqueada permanentemente. Habilite nas configurações.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Abrir Configurações', onPress: () => Linking.openSettings() },
+      ]
+    );
+    return false;
+  }
+  return false;
+};
+
 // Função para logar status das permissões
 const handlePermissionStatus = (permission: string, status: string) => {
   switch (status) {
@@ -31,7 +51,8 @@ export const BluetoothPermiss = async () => {
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
-      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION, // necessário para BLE
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+       PermissionsAndroid.PERMISSIONS.CAMERA, // necessário para BLE
     ];
 
     const results = await PermissionsAndroid.requestMultiple(permissions);
@@ -89,6 +110,7 @@ export default function HomeScreen() {
     >
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Bem Vindo a interface CIA</ThemedText>
+        <HelloWave />
       </ThemedView>
 
       <ThemedView style={styles.titleContainer}>
@@ -99,12 +121,12 @@ export default function HomeScreen() {
         >
           <ThemedText style={styles.buttonText}>AQUI</ThemedText>
         </Pressable>
-        <HelloWave />
+        
       </ThemedView>
 
       <ThemedView style={styles.titleContainer}>
         <Pressable
-          onPress={BluetoothPermiss}
+          onPress={CameraPermission}
           style={[styles.caixa, { backgroundColor: 'blue' }]}
         >
           <ThemedText style={styles.buttonText}>

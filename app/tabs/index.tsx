@@ -1,10 +1,10 @@
-import React from 'react';
-import { PermissionsAndroid, Pressable, StyleSheet, Linking, Image, Alert } from 'react-native';
+import React, {useEffect, useState} from 'react';
+import { PermissionsAndroid, Pressable, StyleSheet, Linking, Image, Alert, View, Button, FlatList, Text, NativeEventEmitter, NativeModules  } from 'react-native';
 import { HelloWave } from 'components/HelloWave';
 import ParallaxScrollView from 'components/ParallaxScrollView';
 import { ThemedText } from 'components/ThemedText';
 import { ThemedView } from 'components/ThemedView';
-import ImagemColarIA from 'assets/images/ImagemColarIA.png';
+import BluetoothConnection from './tabs/Bluetooth';
 
 export const CameraPermission = async () => {
   
@@ -107,26 +107,25 @@ export default function HomeScreen() {
           style={styles.reactLogo}
         />
       }
-    >
+    ><View style={{gap: 35}}>
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Bem Vindo a interface CIA</ThemedText>
-        <HelloWave />
+        <ThemedText type="title">Bem Vindo a interface CIA <HelloWave /> </ThemedText>
       </ThemedView>
 
-      <ThemedView style={styles.titleContainer}>
+      <ThemedView style={[styles.titleContainer, {gap: 20}]}>
         <ThemedText type="default">Ative o bluetooth</ThemedText>
         <Pressable
           onPress={BluetoothPermiss}
           style={[styles.button2, { backgroundColor: 'blue' }]}
         >
-          <ThemedText style={styles.buttonText}>AQUI</ThemedText>
+          <ThemedText style={[styles.buttonText, {fontSize: 25}]}>AQUI</ThemedText>
         </Pressable>
         
       </ThemedView>
 
       <ThemedView style={styles.titleContainer}>
         <Pressable
-          onPress={CameraPermission}
+          onPress={BluetoothConnection}
           style={[styles.caixa, { backgroundColor: 'blue' }]}
         >
           <ThemedText style={styles.buttonText}>
@@ -134,6 +133,7 @@ export default function HomeScreen() {
           </ThemedText>
         </Pressable>
       </ThemedView>
+      </View>
     </ParallaxScrollView>
   );
 }
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    
   },
   reactLogo: {
     height: 450,
@@ -163,12 +163,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#eee",
   },
   button2: {
-    marginTop: 8,
-    width: 50,
-    height: 50,
-    borderRadius: 12,
+    borderRadius: 8,
+    height: 40,
+    borderWidth: 2,
+    padding: 4,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: "#eee",
   },
   buttonText: {
     color: 'white',

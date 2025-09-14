@@ -82,11 +82,11 @@ export default function TabTwoScreen() {
   return (
    <View style={[styles.Empty, {backgroundColor: 'white'}]}>
   <ThemedView style={[styles.titleContainer, { paddingTop: 80 }, {gap: 20}, {backgroundColor: "white"}]}>
-    <ThemedText type="title">Controle a temperatura aqui!!!</ThemedText>
+    <ThemedText type="title" style = {[styles.color]}>Controle de temperatura</ThemedText>
 
   </ThemedView>
   <ThemedView style={styles.titleContainer}>
-    <ThemedText type="default">Área Traseira de aquecimento</ThemedText>
+    <ThemedText type="default" style = {[styles.color]}>Área Traseira de aquecimento</ThemedText>
   </ThemedView>
   <View style={styles.titleContainer}>
   <Pressable
@@ -112,7 +112,7 @@ export default function TabTwoScreen() {
     </View>
 </View>
   <ThemedView style={styles.titleContainer}>
-    <ThemedText type="default">Área lateral esquerda de aquecimento</ThemedText>
+    <ThemedText type="default" style = {[styles.color]}>Área lateral esquerda de aquecimento</ThemedText>
   </ThemedView>
   <View style={styles.titleContainer}>
   <Pressable
@@ -139,7 +139,7 @@ export default function TabTwoScreen() {
     </View>
 
   <ThemedView style={styles.titleContainer}>
-    <ThemedText type="default">Área lateral direita de aquecimento</ThemedText>
+    <ThemedText type="default" style = {[styles.color]}>Área lateral direita de aquecimento</ThemedText>
   </ThemedView>
   <View style={styles.titleContainer}>
   <Pressable
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   },
   Empty: {
     gap: 20,
-    backgroundColor: 'white'
+    backgroundColor: 'black'
   },
   caixa: {
     borderWidth: 2,
@@ -225,5 +225,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     alignItems: "center",
     justifyContent: 'center',
+  },
+  color: {
+    color: 'black',
   },
 });

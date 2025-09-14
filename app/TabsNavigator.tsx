@@ -3,8 +3,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import TabOneScreen from './tabs/index'; 
 import TabTwoScreen from './tabs/explore'; 
-import { Image } from 'react-native';
+import { Image, StyleSheet} from 'react-native';
+
 import { IconSymbol } from 'components/ui/IconSymbol';
+import { Background } from '@react-navigation/elements';
 
 const Tab = createBottomTabNavigator();
 
@@ -16,7 +18,7 @@ export default function TabsNavigator() {
           name="Home"
           component={TabOneScreen}
           options={{
-           tabBarIcon: ({ color }) => <IconSymbol size={24} name="house.fill" color={color} />,
+           tabBarIcon: ({ color }) => <IconSymbol size={24} name="paperplane.fill" color={color} />,
                 }}
               />
         <Tab.Screen
@@ -30,3 +32,7 @@ export default function TabsNavigator() {
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+
+})

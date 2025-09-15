@@ -1,90 +1,159 @@
-import React, {useEffect, useState} from 'react';
-import { PermissionsAndroid, Pressable, StyleSheet, Linking, Image, Alert, View, Button, FlatList, Text, NativeEventEmitter, NativeModules  } from 'react-native';
-import { HelloWave } from 'components/HelloWave';
-import ParallaxScrollView from 'components/ParallaxScrollView';
-import { ThemedText } from 'components/ThemedText';
-import { ThemedView } from 'components/ThemedView';
-import BleManager from "react-native-ble-manager";
+import { useEffect, useState, useRef } from 'react';
+import { Modal, View, FlatList, Text, Pressable, StyleSheet, Alert } from 'react-native';
+import BleManager from 'react-native-ble-manager';
 
-const CIA_CONTROL_ENABLE = "22086d8b-57c2-4eb4-b82d-4b7936413e78";
-const CONTROLE_TEMP = "2f7d55d9-acce-4a1d-9871-dd3e4ec73eec";
-const ENABLE_1 = "1b4a81b4-abf5-450d-9d4d-81b4e951baa7";
-const ENABLE_2 = "d2b757c1-9fb1-4166-af83-467a0a0a55f3";
-const ENABLE_3 = "765170c6-24e5-4890-a346-10195b57ca7c";
-const AlTemp_1 = "28b66ce2-882e-46e2-bc17-1332f33072db";
-const AlTemp_2 = "83ec522b-14b0-4b42-8a8b-0924993f5490";
-const AlTemp_3 = "e49b8658-6f76-43dd-a36e-db7f4b1aa546";
+const TARGET_MAC = "6C:97:6D:D0:80:1D";
 
-const SERVICE_UUIDS = [CIA_CONTROL_ENABLE, CONTROLE_TEMP];
-const CHARACTERISTIC_UUIDS = [ENABLE_1, ENABLE_2, ENABLE_3, AlTemp_1, AlTemp_2, AlTemp_3];
+interface Props {
+  onClose: () => void;
+}
 
-export default function BluetoothConnection() {
+export const BluetoothConnection = ({ onClose }: Props) => {
   const [devices, setDevices] = useState<any[]>([]);
   const [connectedDevice, setConnectedDevice] = useState<any | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const scanning = useRef(false);
+  const scanInterval = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Inicializa o BLE Manager
-    BleManager.start({ showAlert: false });
+  console.log("Inicializando BLE...");
+  startScanLoop();
 
-    // Eventos do BLE
-    const bleEmitter = new NativeEventEmitter(NativeModules.BleManager);
-
-    const handleDiscoverPeripheral = (device: any) => {
-      setDevices((prev) => {
-        if (!prev.find((d) => d.id === device.id)) {
-          return [...prev, device];
-        }
-        return prev;
-      });
-    };
-
-    bleEmitter.addListener("BleManagerDiscoverPeripheral", handleDiscoverPeripheral);
-
-    return () => {
-      bleEmitter.removeAllListeners("BleManagerDiscoverPeripheral");
-    };
-  }, []);
-
-  // Escanear dispositivos
-  const startScan = () => {
-    setDevices([]);
-    BleManager.scan([], 10, true).then(() => {
-      console.log("Scanning...");
-    });
+  return () => {
+    console.log("Cleanup do useEffect, parando scan...");
+    stopScan().catch(err => console.error("Erro no cleanup do scan:", err));
   };
+}, []);
 
-  // Conectar ao dispositivo
-  const connectToDevice = async (device: any) => {
+  const scanDevicesOnce = async () => {
+    if (!scanning.current) return;
+
     try {
-      await BleManager.connect(device.id);
-      console.log("Conectado a:", device.name || device.id);
-      setConnectedDevice(device);
+      console.log("Scanning dispositivos...");
+      await BleManager.scan([], 5, true); // scan de 5s
+      const discovered = await BleManager.getDiscoveredPeripherals();
+      console.log(`Dispositivos encontrados: ${discovered.length}`);
 
-      // Descobrir serviços e características
-      await BleManager.retrieveServices(device.id);
+      // Remove duplicatas e mantém dispositivos anteriores
+      const combined = [...devices, ...discovered];
+      const uniqueDevices = Array.from(new Map(combined.map(d => [d.id, d])).values());
+
+      // Prioriza TARGET_MAC
+      const sorted = uniqueDevices.sort(d =>
+        d.id.toLowerCase() === TARGET_MAC.toLowerCase() ? -1 : 1
+      );
+
+      setDevices(sorted);
+      console.log("Dispositivos atualizados:", sorted.map(d => d.id));
     } catch (err) {
-      console.error("Erro na conexão:", err);
+      console.error("Erro no scan:", err);
     }
   };
 
+  const startScanLoop = async () => {
+    if (scanning.current) return;
+
+    try {
+      console.log("Iniciando scan contínuo...");
+      await BleManager.start({ showAlert: false }); // garante que o BLE está ativo
+      setModalVisible(true);
+      scanning.current = true;
+
+      // scan imediato
+      scanDevicesOnce();
+
+      // loop contínuo
+      scanInterval.current = setInterval(scanDevicesOnce, 5000);
+    } catch (err) {
+      console.error("Erro iniciando BLE para scan:", err);
+    }
+  };
+
+  const stopScan = async () => {
+    console.log("Parando scan...");
+    scanning.current = false;
+
+    if (scanInterval.current) {
+      clearInterval(scanInterval.current);
+      scanInterval.current = null;
+    }
+
+    try {
+      await BleManager.stopScan();
+      console.log("Scan parado.");
+    } catch (err) {
+      console.error("Erro ao parar scan:", err);
+    }
+
+    setModalVisible(false);
+  };
+
+  const connectToDevice = async (device: any) => {
+    if (connectedDevice) {
+      Alert.alert("Atenção", "Você já está conectado a um dispositivo.");
+      return;
+    }
+    try {
+      console.log("Conectando ao dispositivo:", device.id);
+      await BleManager.connect(device.id);
+      console.log("Conectado a:", device.name || device.id);
+      setConnectedDevice(device);
+      await BleManager.retrieveServices(device.id);
+      Alert.alert("Conectado", `Dispositivo ${device.name || device.id} conectado!`);
+      stopScan();
+    } catch (err) {
+      console.error("Erro ao conectar:", err);
+      Alert.alert("Falha na conexão", `Não foi possível conectar ao dispositivo ${device.name || device.id}`);
+    }
+  };
+
+  const handleRestartScan = () => {
+    console.log("Reiniciando scan...");
+    startScanLoop();
+  };
+
   return (
-    <View style={{ flex: 1, padding: 20 }}>
-      <Button title="Escanear dispositivos" onPress={startScan} />
-
-      <FlatList
-        data={devices}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <Button
-            title={item.name ? item.name : "Sem nome"}
-            onPress={() => connectToDevice(item)}
+    <Modal visible={modalVisible} transparent animationType="slide">
+      <View style={styles.modalBackground}>
+        <View style={styles.modalContainer}>
+          <FlatList
+            data={devices}
+            keyExtractor={item => item.id}
+            renderItem={({ item }) => {
+              const isConnected = connectedDevice?.id === item.id;
+              return (
+                <Pressable
+                  onPress={() => connectToDevice(item)}
+                  style={[styles.deviceButton, isConnected && { backgroundColor: '#d0ffd0' }]}
+                  disabled={!!connectedDevice}
+                >
+                  <Text>
+                    {item.name || "Sem nome"} ({item.id})
+                    {isConnected ? " - Conectado" : ""}
+                  </Text>
+                </Pressable>
+              );
+            }}
           />
-        )}
-      />
-
-      {connectedDevice && (
-        <Text>Conectado a: {connectedDevice.name || connectedDevice.id}</Text>
-      )}
-    </View>
+          {!connectedDevice && (
+            <View style={{ marginTop: 8 }}>
+              <Pressable onPress={stopScan} style={styles.cancelButton}>
+                <Text>Cancelar Scan</Text>
+              </Pressable>
+              <Pressable onPress={handleRestartScan} style={[styles.cancelButton, { marginTop: 6 }]}>
+                <Text>Reiniciar Scan</Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
+      </View>
+    </Modal>
   );
-}
+};
+
+const styles = StyleSheet.create({
+  modalBackground: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center' },
+  modalContainer: { backgroundColor: 'white', margin: 20, borderRadius: 8, padding: 16, maxHeight: '80%' },
+  deviceButton: { padding: 12, borderBottomWidth: 1, borderColor: '#ddd' },
+  cancelButton: { padding: 12, alignItems: 'center', backgroundColor: '#eee', borderRadius: 6 },
+});

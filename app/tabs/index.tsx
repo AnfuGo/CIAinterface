@@ -1,13 +1,12 @@
-import React, {useEffect, useState} from 'react';
-import { PermissionsAndroid, Pressable, StyleSheet, Linking, Image, Alert, View, Button, FlatList, Text, NativeEventEmitter, NativeModules  } from 'react-native';
+import React, { useState } from 'react';
+import { PermissionsAndroid, Pressable, StyleSheet, Linking, Image, Alert, View } from 'react-native';
 import { HelloWave } from 'components/HelloWave';
 import ParallaxScrollView from 'components/ParallaxScrollView';
 import { ThemedText } from 'components/ThemedText';
 import { ThemedView } from 'components/ThemedView';
-import BluetoothConnection from './tabs/Bluetooth';
+import { BluetoothConnection } from './Bluetooth'; 
 
 export const CameraPermission = async () => {
-  
   const permission = PermissionsAndroid.PERMISSIONS.CAMERA;
   const result = await PermissionsAndroid.request(permission);
 
@@ -26,7 +25,6 @@ export const CameraPermission = async () => {
   return false;
 };
 
-// Função para logar status das permissões
 const handlePermissionStatus = (permission: string, status: string) => {
   switch (status) {
     case PermissionsAndroid.RESULTS.GRANTED:
@@ -44,7 +42,6 @@ const handlePermissionStatus = (permission: string, status: string) => {
   }
 };
 
-// Função para pedir permissões Bluetooth no Android
 export const BluetoothPermiss = async () => {
   try {
     const permissions = [
@@ -52,7 +49,7 @@ export const BluetoothPermiss = async () => {
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
       PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-       PermissionsAndroid.PERMISSIONS.CAMERA, // necessário para BLE
+      PermissionsAndroid.PERMISSIONS.CAMERA,
     ];
 
     const results = await PermissionsAndroid.requestMultiple(permissions);
@@ -72,7 +69,6 @@ export const BluetoothPermiss = async () => {
     }
 
     if (blockedPermanently) {
-      // Mostra Alert para guiar o usuário
       Alert.alert(
         'Permissões necessárias',
         'Algumas permissões Bluetooth estão bloqueadas permanentemente. Você precisa habilitá-las manualmente nas configurações do app.',
@@ -98,6 +94,8 @@ export const BluetoothPermiss = async () => {
 };
 
 export default function HomeScreen() {
+  const [showBluetooth, setShowBluetooth] = useState(false);
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#eee' }}
@@ -107,32 +105,37 @@ export default function HomeScreen() {
           style={styles.reactLogo}
         />
       }
-    ><View style={{gap: 35}}>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Bem Vindo a interface CIA <HelloWave /> </ThemedText>
-      </ThemedView>
-
-      <ThemedView style={[styles.titleContainer, {gap: 20}]}>
-        <ThemedText type="default">Ative o bluetooth</ThemedText>
-        <Pressable
-          onPress={BluetoothPermiss}
-          style={[styles.button2, { backgroundColor: 'blue' }]}
-        >
-          <ThemedText style={[styles.buttonText, {fontSize: 25}]}>AQUI</ThemedText>
-        </Pressable>
-        
-      </ThemedView>
-
-      <ThemedView style={styles.titleContainer}>
-        <Pressable
-          onPress={BluetoothConnection}
-          style={[styles.caixa, { backgroundColor: 'blue' }]}
-        >
-          <ThemedText style={styles.buttonText}>
-            Conecte-se ao dispositivo{"\n"}CLIQUE AQUI!
+    >
+      <View style={{ gap: 35 }}>
+        <ThemedView style={styles.titleContainer}>
+          <ThemedText type="title">
+            Bem Vindo a interface CIA <HelloWave />
           </ThemedText>
-        </Pressable>
-      </ThemedView>
+        </ThemedView>
+
+        <ThemedView style={[styles.titleContainer, { gap: 20 }]}>
+          <ThemedText type="default">Ative o bluetooth</ThemedText>
+          <Pressable
+            onPress={BluetoothPermiss}
+            style={[styles.button2, { backgroundColor: 'blue' }]}
+          >
+            <ThemedText style={[styles.buttonText, { fontSize: 25 }]}>AQUI</ThemedText>
+          </Pressable>
+        </ThemedView>
+
+        <ThemedView style={styles.titleContainer}>
+          <Pressable
+            onPress={() => setShowBluetooth(true)} // ⬅ mostra o componente
+            style={[styles.caixa, { backgroundColor: 'blue' }]}
+          >
+            <ThemedText style={styles.buttonText}>
+              Conecte-se ao dispositivo{"\n"}CLIQUE AQUI!
+            </ThemedText>
+          </Pressable>
+        </ThemedView>
+
+        {/* Renderiza o componente BluetoothConnection quando showBluetooth for true */}
+        {showBluetooth && <BluetoothConnection onClose={() => setShowBluetooth(false)} />}
       </View>
     </ParallaxScrollView>
   );
@@ -142,7 +145,6 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    
   },
   reactLogo: {
     height: 450,

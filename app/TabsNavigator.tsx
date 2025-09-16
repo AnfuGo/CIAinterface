@@ -4,7 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import TabOneScreen from './tabs/index'; 
 import TabTwoScreen from './tabs/explore'; 
 import { Image, StyleSheet} from 'react-native';
-
+import { PeripheralProvider } from './tabs/peripheralContext';
 import { IconSymbol } from 'components/ui/IconSymbol';
 import { Background } from '@react-navigation/elements';
 
@@ -12,6 +12,7 @@ const Tab = createBottomTabNavigator();
 
 export default function TabsNavigator() {
   return (
+    <PeripheralProvider>
     <NavigationContainer>
       <Tab.Navigator screenOptions={{ headerShown: false }}>
         <Tab.Screen
@@ -30,6 +31,7 @@ export default function TabsNavigator() {
         />
       </Tab.Navigator>
     </NavigationContainer>
+    </PeripheralProvider>
   );
 }
 

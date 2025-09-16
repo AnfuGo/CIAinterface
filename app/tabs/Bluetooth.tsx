@@ -1,29 +1,30 @@
 import { useEffect, useState, useRef } from 'react';
 import { Modal, View, FlatList, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import BleManager from 'react-native-ble-manager';
+import { usePeripheralContext } from './PeripheralContext';
 
 const TARGET_MAC = "6C:97:6D:D0:80:1D";
+//export const [peripheralId, setPeripheralId] = useState(null);
+//export const [peripheralId, setPeripheralId] = useState<string | null>(null);
 
 interface Props {
   onClose: () => void;
 }
 
 export const BluetoothConnection = ({ onClose }: Props) => {
+  const { setPeripheralId } = usePeripheralContext();
   const [devices, setDevices] = useState<any[]>([]);
   const [connectedDevice, setConnectedDevice] = useState<any | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
   const scanning = useRef(false);
   const scanInterval = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-  console.log("Inicializando BLE...");
-  startScanLoop();
+    startScanLoop();
 
-  return () => {
-    console.log("Cleanup do useEffect, parando scan...");
-    stopScan().catch(err => console.error("Erro no cleanup do scan:", err));
-  };
-}, []);
+    return () => {
+      stopScan().catch(err => console.error("Erro no cleanup do scan:", err));
+    };
+  }, []);
 
   const scanDevicesOnce = async () => {
     if (!scanning.current) return;
@@ -35,16 +36,17 @@ export const BluetoothConnection = ({ onClose }: Props) => {
       console.log(`Dispositivos encontrados: ${discovered.length}`);
 
       // Remove duplicatas e mantém dispositivos anteriores
-      const combined = [...devices, ...discovered];
-      const uniqueDevices = Array.from(new Map(combined.map(d => [d.id, d])).values());
+      setDevices(prev => {
+        const combined = [...prev, ...discovered];
+        const uniqueDevices = Array.from(new Map(combined.map(d => [d.id, d])).values());
 
-      // Prioriza TARGET_MAC
-      const sorted = uniqueDevices.sort(d =>
-        d.id.toLowerCase() === TARGET_MAC.toLowerCase() ? -1 : 1
-      );
-
-      setDevices(sorted);
-      console.log("Dispositivos atualizados:", sorted.map(d => d.id));
+        // Prioriza TARGET_MAC
+        const sorted = uniqueDevices.sort((a, b) =>
+          (a.id.toLowerCase() === TARGET_MAC.toLowerCase() ? -1 : 1)
+        );
+        console.log("Dispositivos atualizados:", sorted.map(d => d.id));
+        return sorted;
+      });
     } catch (err) {
       console.error("Erro no scan:", err);
     }
@@ -56,11 +58,10 @@ export const BluetoothConnection = ({ onClose }: Props) => {
     try {
       console.log("Iniciando scan contínuo...");
       await BleManager.start({ showAlert: false }); // garante que o BLE está ativo
-      setModalVisible(true);
       scanning.current = true;
 
-      // scan imediato
-      scanDevicesOnce();
+      
+      await scanDevicesOnce();
 
       // loop contínuo
       scanInterval.current = setInterval(scanDevicesOnce, 5000);
@@ -85,7 +86,12 @@ export const BluetoothConnection = ({ onClose }: Props) => {
       console.error("Erro ao parar scan:", err);
     }
 
-    setModalVisible(false);
+    // Avisa o parent para fechar/remover o componente (desmonta)
+    try {
+      onClose();
+    } catch (e) {
+      // se onClose não existir, ignora
+    }
   };
 
   const connectToDevice = async (device: any) => {
@@ -100,20 +106,41 @@ export const BluetoothConnection = ({ onClose }: Props) => {
       setConnectedDevice(device);
       await BleManager.retrieveServices(device.id);
       Alert.alert("Conectado", `Dispositivo ${device.name || device.id} conectado!`);
-      stopScan();
+      setPeripheralId(device.id);
+      // Ao conectar com sucesso, fecha o modal (parent vai desmontar o componente)
+      onClose();
     } catch (err) {
       console.error("Erro ao conectar:", err);
       Alert.alert("Falha na conexão", `Não foi possível conectar ao dispositivo ${device.name || device.id}`);
     }
   };
 
-  const handleRestartScan = () => {
-    console.log("Reiniciando scan...");
-    startScanLoop();
-  };
+  const handleRestartScan = async () => {
+  console.log("Reiniciando scan...");
 
+  if (scanning.current) {
+    if (scanInterval.current) {
+      clearInterval(scanInterval.current);
+      scanInterval.current = null;
+    }
+    try {
+      await BleManager.stopScan();
+      console.log("Scan externo parado para reiniciar.");
+    } catch (err) {
+      console.warn("Erro ao parar scan antes de reiniciar:", err);
+    }
+    scanning.current = false;
+  }
+
+  setTimeout(() => {
+    startScanLoop();
+  }, 200);
+};
+
+
+  // Modal visible sempre que o componente estiver montado (parent controla montar/desmontar)
   return (
-    <Modal visible={modalVisible} transparent animationType="slide">
+    <Modal visible transparent animationType="slide">
       <View style={styles.modalBackground}>
         <View style={styles.modalContainer}>
           <FlatList

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Modal, View, FlatList, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import BleManager from 'react-native-ble-manager';
-import { usePeripheralContext } from './PeripheralContext';
+import { usePeripheralContext } from './peripheralContext';
 
 const TARGET_MAC = "6C:97:6D:D0:80:1D";
 //export const [peripheralId, setPeripheralId] = useState(null);

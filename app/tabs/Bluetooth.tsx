@@ -3,7 +3,7 @@ import { Modal, View, FlatList, Text, Pressable, StyleSheet, Alert } from 'react
 import BleManager from 'react-native-ble-manager';
 import { usePeripheralContext } from './peripheralContext';
 
-const TARGET_MAC = "6C:97:6D:D0:80:1D";
+const TARGET_MAC = "ec:e3:34:45:f1:06";
 //export const [peripheralId, setPeripheralId] = useState(null);
 //export const [peripheralId, setPeripheralId] = useState<string | null>(null);
 
@@ -25,50 +25,74 @@ export const BluetoothConnection = ({ onClose }: Props) => {
       stopScan().catch(err => console.error("Erro no cleanup do scan:", err));
     };
   }, []);
+  const getPeripherals = async () => {
+  try {
+    const discovered = await BleManager.getDiscoveredPeripherals(); // array
+    const connected = await BleManager.getConnectedPeripherals([]); // já conectados
+    // combina e remove duplicatas baseado em id
+    const combined = [...discovered, ...connected];
+    const unique = Array.from(new Map(combined.map(d => [d.id, d])).values());
+    return unique;
+  } catch (err) {
+    console.error("Erro getPeripherals:", err);
+    return [];
+  }
+};
 
-  const scanDevicesOnce = async () => {
-    if (!scanning.current) return;
+const scanDevicesOnce = async () => {
+  if (!scanning.current) return;
 
-    try {
-      console.log("Scanning dispositivos...");
-      await BleManager.scan([], 5, true); // scan de 5s
-      const discovered = await BleManager.getDiscoveredPeripherals();
-      console.log(`Dispositivos encontrados: ${discovered.length}`);
+  try {
+    console.log("Iniciando scan rápido (5s)...");
+    // scan(serviceUUIDs[], seconds, allowDuplicates)
+    await BleManager.scan([], 5, true);
 
-      // Remove duplicatas e mantém dispositivos anteriores
-      setDevices(prev => {
-        const combined = [...prev, ...discovered];
-        const uniqueDevices = Array.from(new Map(combined.map(d => [d.id, d])).values());
+    // espera breve para permitir que alguns anúncios sejam recebidos pelo sistema
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Prioriza TARGET_MAC
-        const sorted = uniqueDevices.sort((a, b) =>
-          (a.id.toLowerCase() === TARGET_MAC.toLowerCase() ? -1 : 1)
-        );
-        console.log("Dispositivos atualizados:", sorted.map(d => d.id));
-        return sorted;
+    // pega dispositivos descobertos + conectados
+    const peripherals = await getPeripherals();
+    console.log(`Periféricos obtidos (discovered+connected): ${peripherals.length}`);
+
+    setDevices(prev => {
+      // combina lista atual com novos periféricos e remove duplicatas
+      const combined = [...prev, ...peripherals];
+      const uniqueDevices = Array.from(new Map(combined.map(d => [d.id, d])).values());
+
+      // Prioriza TARGET_MAC se presente (coloca no início)
+      uniqueDevices.sort((a, b) => {
+        const aid = (a.id || '').toLowerCase();
+        const bid = (b.id || '').toLowerCase();
+        if (aid === TARGET_MAC.toLowerCase()) return -1;
+        if (bid === TARGET_MAC.toLowerCase()) return 1;
+        return 0;
       });
-    } catch (err) {
-      console.error("Erro no scan:", err);
-    }
-  };
 
-  const startScanLoop = async () => {
-    if (scanning.current) return;
+      console.log("Dispositivos atualizados:", uniqueDevices.map(d => d.id));
+      return uniqueDevices;
+    });
+  } catch (err) {
+    console.error("Erro no scan:", err);
+  }
+};
 
-    try {
-      console.log("Iniciando scan contínuo...");
-      await BleManager.start({ showAlert: false }); // garante que o BLE está ativo
-      scanning.current = true;
+const startScanLoop = async () => {
+  if (scanning.current) return;
 
-      
-      await scanDevicesOnce();
+  try {
+    console.log("Iniciando scan contínuo (loop 3s)...");
+    await BleManager.start({ showAlert: false }); // garante que o BLE esteja ativo
+    scanning.current = true;
 
-      // loop contínuo
-      scanInterval.current = setInterval(scanDevicesOnce, 5000);
-    } catch (err) {
-      console.error("Erro iniciando BLE para scan:", err);
-    }
-  };
+    // dispara um scan imediato
+    await scanDevicesOnce();
+
+    // loop contínuo: scans a cada 3s (mais responsivo)
+    scanInterval.current = setInterval(scanDevicesOnce, 3000);
+  } catch (err) {
+    console.error("Erro iniciando BLE para scan:", err);
+  }
+};
 
   const stopScan = async () => {
     console.log("Parando scan...");

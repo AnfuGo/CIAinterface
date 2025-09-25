@@ -1,9 +1,11 @@
 import { ThemedText } from 'components/ThemedText';
 import { ThemedView } from 'components/ThemedView';
 import React, { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, Alert } from 'react-native';
 import { usePeripheralContext } from './peripheralContext';
 import BleManager from 'react-native-ble-manager';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 // UUIDs
 const CIA_CONTROL_ENABLE = "22086d8b-57c2-4eb4-b82d-4b7936413e78";
@@ -30,10 +32,48 @@ export default function TabTwoScreen() {
   const [ligado2, setEnable2] = useState(0);
   const [ligado3, setEnable3] = useState(0);
 
-  // Função de envio BLE de temperatura (usada pelo useEffect)
+  const [Sensor1, setSensor1] = useState(25);
+  const [Sensor2, setSensor2] = useState(25);
+  const [Sensor3, setSensor3] = useState(25);
+
+  type RootStackParamList = {
+    Home: undefined;
+    TabTwo: undefined;
+  };
+
+  type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'TabTwo'>;
+  const navigation = useNavigation<NavigationProp>();
+
+  // Função centralizada para validar antes de alterar valores
+  const safeSetValor = (zona: number, updater: (prev: number) => number) => {
+    if (!peripheralId) {
+      Alert.alert(
+        "Dispositivo não conectado",
+        "Ative o Bluetooth e conecte ao CIA primeiro.",
+        [
+          { text: "Cancelar", style: "cancel" },
+          { text: "OK", onPress: () => navigation.navigate("Home") },
+        ]
+      );
+      return;
+    }
+
+    if (zona === 1) setValor1(updater);
+    if (zona === 2) setValor2(updater);
+    if (zona === 3) setValor3(updater);
+  };
+
+  // Função de envio BLE de temperatura
   const ComandoBluetooth = async (zona: number, valor: number) => {
     if (!peripheralId) {
-      console.log("dispositivo não conectado (ComandoBluetooth)");
+      Alert.alert(
+        'Dispositivo não conectado',
+        'Certifique-se que o Bluetooth está ligado e o smartphone está conectado ao CIA',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Ok', onPress: () => navigation.navigate("Home") },
+        ]
+      );
       return;
     }
 
@@ -43,7 +83,6 @@ export default function TabTwoScreen() {
     else if (zona === 3) charUUID = AlTemp_3;
     else return;
 
-    // garante byte entre 0-255
     const byte = valor & 0xFF;
 
     try {
@@ -54,10 +93,43 @@ export default function TabTwoScreen() {
     }
   };
 
-  // Funções de ativar áreas (agora chamadas pelo useEffect que observa 'ligadoX')
+  const lerTemperatura = async () => {
+    if (!peripheralId) {
+      console.log("dispositivo não conectado (lerTemperatura)");
+      return;
+    }
+
+    try {
+      const data1 = await BleManager.read(peripheralId, CONTROLE_TEMP, AlTemp_1);
+      const temp1 = String.fromCharCode.apply(null, data1);
+      setSensor1(parseFloat(temp1));
+
+      const data2 = await BleManager.read(peripheralId, CONTROLE_TEMP, AlTemp_2);
+      const temp2 = String.fromCharCode.apply(null, data2);
+      setSensor2(parseFloat(temp2));
+
+      const data3 = await BleManager.read(peripheralId, CONTROLE_TEMP, AlTemp_3);
+      const temp3 = String.fromCharCode.apply(null, data3);
+      setSensor3(parseFloat(temp3));
+
+      console.log("Temperaturas:", temp1, temp2, temp3);
+    } catch (err) {
+      console.error("Erro ao ler temperatura:", err);
+    }
+  };
+
+  // Ativar áreas
   const AtivaArea1 = async () => {
     if (!peripheralId) {
       console.log("dispositivo não conectado (AtivaArea1)");
+      Alert.alert(
+        'Dispositivo não conectado',
+        'Certifique-se que o Bluetooth está ligado e o smartphone está conectado ao CIA',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Ok', onPress: () => navigation.navigate("Home") },
+        ]
+      );
       return;
     }
     try {
@@ -68,9 +140,18 @@ export default function TabTwoScreen() {
       console.error("Erro AtivaArea1:", err);
     }
   };
+
   const AtivaArea2 = async () => {
     if (!peripheralId) {
       console.log("dispositivo não conectado (AtivaArea2)");
+      Alert.alert(
+        'Dispositivo não conectado',
+        'Certifique-se que o Bluetooth está ligado e o smartphone está conectado ao CIA',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Ok', onPress: () => navigation.navigate("Home") },
+        ]
+      );
       return;
     }
     try {
@@ -81,9 +162,18 @@ export default function TabTwoScreen() {
       console.error("Erro AtivaArea2:", err);
     }
   };
+
   const AtivaArea3 = async () => {
     if (!peripheralId) {
       console.log("dispositivo não conectado (AtivaArea3)");
+      Alert.alert(
+        'Dispositivo não conectado',
+        'Certifique-se que o Bluetooth está ligado e o smartphone está conectado ao CIA',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Ok', onPress: () => navigation.navigate("Home") },
+        ]
+      );
       return;
     }
     try {
@@ -95,39 +185,31 @@ export default function TabTwoScreen() {
     }
   };
 
-  // useEffects que reagem às mudanças de 'ligadoX' e 'valorX'
-  useEffect(() => {
-    // quando ligado1 mudar, chama AtivaArea1 usando o valor atualizado
-    AtivaArea1();
-  }, [ligado1, peripheralId]);
+  // useEffects
+  useEffect(() => { AtivaArea1(); }, [ligado1, peripheralId]);
+  useEffect(() => { AtivaArea2(); }, [ligado2, peripheralId]);
+  useEffect(() => { AtivaArea3(); }, [ligado3, peripheralId]);
+
+  useEffect(() => { ComandoBluetooth(1, valor1); }, [valor1, peripheralId]);
+  useEffect(() => { ComandoBluetooth(2, valor2); }, [valor2, peripheralId]);
+  useEffect(() => { ComandoBluetooth(3, valor3); }, [valor3, peripheralId]);
 
   useEffect(() => {
-    AtivaArea2();
-  }, [ligado2, peripheralId]);
+    let intervalo: ReturnType<typeof setInterval>;
+    if (peripheralId) {
+      intervalo = setInterval(() => {
+        lerTemperatura();
+      }, 3000);
+    }
+    return () => clearInterval(intervalo);
+  }, [peripheralId]);
 
-  useEffect(() => {
-    AtivaArea3();
-  }, [ligado3, peripheralId]);
-
-  // envia temperatura quando o valor muda (garante que o envio use o valor atualizado)
-  useEffect(() => {
-    ComandoBluetooth(1, valor1);
-  }, [valor1, peripheralId]);
-
-  useEffect(() => {
-    ComandoBluetooth(2, valor2);
-  }, [valor2, peripheralId]);
-
-  useEffect(() => {
-    ComandoBluetooth(3, valor3);
-  }, [valor3, peripheralId]);
-
-  // Troca de cores e update de estado (não chamam AtivaArea diretamente)
+  // Troca cores
   const TrocaCor = () => {
     setBt1Color(prev => {
       const novaCor1 = prev === 'red' ? 'green' : 'red';
       const newEnable = novaCor1 === 'green' ? 1 : 0;
-      setEnable1(newEnable); // atualização assíncrona; useEffect reagirá
+      setEnable1(newEnable);
       console.log("cor_1:", novaCor1, "-> will set enable1:", newEnable);
       return novaCor1;
     });
@@ -153,23 +235,24 @@ export default function TabTwoScreen() {
     });
   };
 
-  // Funções de ajuste de temperatura (apenas setState - envio via useEffect)
-  const AumentaBT1 = () => setValor1(prev => prev + 1);
-  const DiminuiBT1 = () => setValor1(prev => prev - 1);
-  const AumentaBT2 = () => setValor2(prev => prev + 1);
-  const DiminuiBT2 = () => setValor2(prev => prev - 1);
-  const AumentaBT3 = () => setValor3(prev => prev + 1);
-  const DiminuiBT3 = () => setValor3(prev => prev - 1);
+  // Ajuste de temperatura
+  const AumentaBT1 = () => safeSetValor(1, prev => prev + 1);
+  const DiminuiBT1 = () => safeSetValor(1, prev => prev - 1);
+
+  const AumentaBT2 = () => safeSetValor(2, prev => prev + 1);
+  const DiminuiBT2 = () => safeSetValor(2, prev => prev - 1);
+
+  const AumentaBT3 = () => safeSetValor(3, prev => prev + 1);
+  const DiminuiBT3 = () => safeSetValor(3, prev => prev - 1);
 
   return (
     <View style={[styles.Empty, { backgroundColor: 'white' }]}>
-      <ThemedView style={[styles.titleContainer, { paddingTop: 80 }, { gap: 20 }, { backgroundColor: "white" }]}>
-        <ThemedText type="title" style={[styles.color]}>Controle de temperatura</ThemedText>
+      <ThemedView style={[styles.titleContainer2, { paddingTop: 80, gap: 20, backgroundColor: "white", justifyContent: "center" }]}>
+        <ThemedText type="title" style={styles.color}>Controle de temperatura</ThemedText>
       </ThemedView>
 
-      {}
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="default" style={[styles.color]}>Área Traseira de aquecimento</ThemedText>
+      <ThemedView style={[styles.titleContainer, { justifyContent: "center" }]}>
+        <ThemedText type="default" style={styles.color}>Área Traseira de aquecimento</ThemedText>
       </ThemedView>
       <View style={styles.titleContainer}>
         <Pressable onPress={TrocaCor} style={[styles.button, { backgroundColor: bt1Color }]}>
@@ -186,9 +269,8 @@ export default function TabTwoScreen() {
         </View>
       </View>
 
-      {}
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="default" style={[styles.color]}>Área lateral esquerda de aquecimento</ThemedText>
+      <ThemedView style={[styles.titleContainer, { justifyContent: "center" }]}>
+        <ThemedText type="default" style={styles.color}>Área lateral esquerda de aquecimento</ThemedText>
       </ThemedView>
       <View style={styles.titleContainer}>
         <Pressable onPress={TrocaCor2} style={[styles.button, { backgroundColor: bt2Color }]}>
@@ -205,9 +287,8 @@ export default function TabTwoScreen() {
         </View>
       </View>
 
-      {}
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="default" style={[styles.color]}>Área lateral direita de aquecimento</ThemedText>
+      <ThemedView style={[styles.titleContainer, { justifyContent: "center" }]}>
+        <ThemedText type="default" style={styles.color}>Área lateral direita de aquecimento</ThemedText>
       </ThemedView>
       <View style={styles.titleContainer}>
         <Pressable onPress={TrocaCor3} style={[styles.button, { backgroundColor: bt3Color }]}>
@@ -216,11 +297,26 @@ export default function TabTwoScreen() {
         <Pressable onPress={AumentaBT3} style={[styles.button2, { backgroundColor: 'gray' }]}>
           <ThemedText style={styles.buttonText}>+</ThemedText>
         </Pressable>
-        <Pressable onPress={DiminuiBT3} style={[styles.button2, { backgroundColor: 'gray' }]} >
+        <Pressable onPress={DiminuiBT3} style={[styles.button2, { backgroundColor: 'gray' }]}>
           <ThemedText style={styles.buttonText}>-</ThemedText>
         </Pressable>
         <View style={styles.caixa}>
           <ThemedText style={styles.valorTexto}>{valor3}</ThemedText>
+        </View>
+      </View>
+
+      <ThemedView style={[styles.titleContainer, { justifyContent: "center" }]}>
+        <ThemedText type="default" style={styles.color}>Temperatura das Áreas</ThemedText>
+      </ThemedView>
+      <View style={[styles.titleContainer, { justifyContent: "center" }]}>
+        <View style={styles.caixa}>
+          <ThemedText style={styles.valorTexto}>{Sensor1} °C</ThemedText>
+        </View>
+        <View style={styles.caixa}>
+          <ThemedText style={styles.valorTexto}>{Sensor2} °C</ThemedText>
+        </View>
+        <View style={styles.caixa}>
+          <ThemedText style={styles.valorTexto}>{Sensor3} °C</ThemedText>
         </View>
       </View>
     </View>
@@ -239,8 +335,13 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: 'white',
   },
+  titleContainer2: {
+    flexDirection: 'row',
+    gap: 8,
+    backgroundColor: 'white',
+  },
   Empty: {
-    gap: 20,
+    gap: 14,
     backgroundColor: 'black',
   },
   caixa: {

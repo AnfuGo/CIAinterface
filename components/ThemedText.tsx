@@ -42,6 +42,7 @@ const styles = StyleSheet.create({
   default: {
     fontSize: 20,
     lineHeight: 24,
+    justifyContent: "center"
   },
   defaultSemiBold: {
     fontSize: 16,
@@ -49,7 +50,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   title: {
-    fontSize: 36,
+    fontSize: 34,
     fontWeight: 'bold',
     lineHeight: 32,
   },

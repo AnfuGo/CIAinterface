@@ -102,15 +102,18 @@ export default function TabTwoScreen() {
     try {
       const data1 = await BleManager.read(peripheralId, CONTROLE_TEMP, AlTemp_1);
       const temp1 = String.fromCharCode.apply(null, data1);
-      setSensor1(parseFloat(temp1));
+      const temp1dec = parseFloat(temp1).toFixed(2);
+      setSensor1(parseFloat(temp1dec));
 
       const data2 = await BleManager.read(peripheralId, CONTROLE_TEMP, AlTemp_2);
       const temp2 = String.fromCharCode.apply(null, data2);
-      setSensor2(parseFloat(temp2));
+      const temp2dec = parseFloat(temp1).toFixed(2);
+      setSensor2(parseFloat(temp2dec));
 
       const data3 = await BleManager.read(peripheralId, CONTROLE_TEMP, AlTemp_3);
       const temp3 = String.fromCharCode.apply(null, data3);
-      setSensor3(parseFloat(temp3));
+      const temp3dec = parseFloat(temp1).toFixed(2);
+      setSensor3(parseFloat(temp3dec));
 
       console.log("Temperaturas:", temp1, temp2, temp3);
     } catch (err) {

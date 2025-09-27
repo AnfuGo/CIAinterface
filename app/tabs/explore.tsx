@@ -1,6 +1,6 @@
 import { ThemedText } from 'components/ThemedText';
 import { ThemedView } from 'components/ThemedView';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef  } from 'react';
 import { Pressable, StyleSheet, View, Alert } from 'react-native';
 import { usePeripheralContext } from './peripheralContext';
 import BleManager from 'react-native-ble-manager';
@@ -18,6 +18,25 @@ const AlTemp_2 = "83ec522b-14b0-4b42-8a8b-0924993f5490";
 const AlTemp_3 = "e49b8658-6f76-43dd-a36e-db7f4b1aa546";
 
 export default function TabTwoScreen() {
+  // ---- REF para controlar o alerta automático (montagem)
+  const mountAlertShownRef = useRef(false);
+
+  // Alerta único na montagem (executa 1 vez)
+  useEffect(() => {
+    if (!peripheralId && !mountAlertShownRef.current) {
+      mountAlertShownRef.current = true;
+      Alert.alert(
+        "Dispositivo não conectado",
+        "Ative o Bluetooth e conecte ao CIA primeiro.",
+        [
+          { text: "Cancelar", style: "cancel" },
+          { text: "OK", onPress: () => navigation.navigate("Home") },
+        ]
+      );
+      console.log("alerta ATIVADO_montagem");
+    }
+    // NOTE: deps vazias para rodar somente na montagem e checar o valor inicial de peripheralId
+  }, []);
   // Estados
   const { peripheralId } = usePeripheralContext();
   const [valor1, setValor1] = useState(25);
@@ -46,7 +65,7 @@ export default function TabTwoScreen() {
 
   // Função centralizada para validar antes de alterar valores
   const safeSetValor = (zona: number, updater: (prev: number) => number) => {
-    if (!peripheralId) {
+    if (!peripheralId && mountAlertShownRef.current) {
       Alert.alert(
         "Dispositivo não conectado",
         "Ative o Bluetooth e conecte ao CIA primeiro.",
@@ -55,6 +74,7 @@ export default function TabTwoScreen() {
           { text: "OK", onPress: () => navigation.navigate("Home") },
         ]
       );
+      console.log("alerta ATIVADO_safeSetValor");
       return;
     }
 
@@ -66,14 +86,6 @@ export default function TabTwoScreen() {
   // Função de envio BLE de temperatura
   const ComandoBluetooth = async (zona: number, valor: number) => {
     if (!peripheralId) {
-      Alert.alert(
-        'Dispositivo não conectado',
-        'Certifique-se que o Bluetooth está ligado e o smartphone está conectado ao CIA',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Ok', onPress: () => navigation.navigate("Home") },
-        ]
-      );
       return;
     }
 
@@ -94,7 +106,7 @@ export default function TabTwoScreen() {
   };
 
   const lerTemperatura = async () => {
-    if (!peripheralId) {
+    if (!peripheralId ) {
       console.log("dispositivo não conectado (lerTemperatura)");
       return;
     }
@@ -107,12 +119,12 @@ export default function TabTwoScreen() {
 
       const data2 = await BleManager.read(peripheralId, CONTROLE_TEMP, AlTemp_2);
       const temp2 = String.fromCharCode.apply(null, data2);
-      const temp2dec = parseFloat(temp1).toFixed(2);
+      const temp2dec = parseFloat(temp2).toFixed(2);
       setSensor2(parseFloat(temp2dec));
 
       const data3 = await BleManager.read(peripheralId, CONTROLE_TEMP, AlTemp_3);
       const temp3 = String.fromCharCode.apply(null, data3);
-      const temp3dec = parseFloat(temp1).toFixed(2);
+      const temp3dec = parseFloat(temp3).toFixed(2);
       setSensor3(parseFloat(temp3dec));
 
       console.log("Temperaturas:", temp1, temp2, temp3);
@@ -121,11 +133,11 @@ export default function TabTwoScreen() {
     }
   };
 
-  // Ativar áreas
-  const AtivaArea1 = async () => {
+  // ---- Função unificada para ativar área (usada por botões)
+  const AtivaArea = async (zona: number, valor: number) => {
     if (!peripheralId) {
-      console.log("dispositivo não conectado (AtivaArea1)");
-      Alert.alert(
+      if (mountAlertShownRef.current){
+        Alert.alert(
         'Dispositivo não conectado',
         'Certifique-se que o Bluetooth está ligado e o smartphone está conectado ao CIA',
         [
@@ -133,65 +145,29 @@ export default function TabTwoScreen() {
           { text: 'Ok', onPress: () => navigation.navigate("Home") },
         ]
       );
+      console.log("alerta ATIVADO_ativaArea");
+      }
       return;
     }
-    try {
-      const byte = ligado1 ? 1 : 0;
-      await BleManager.write(peripheralId, CIA_CONTROL_ENABLE, ENABLE_1, [byte]);
-      console.log("Área 1 atualizada ->", byte);
-    } catch (err) {
-      console.error("Erro AtivaArea1:", err);
-    }
-  };
 
-  const AtivaArea2 = async () => {
-    if (!peripheralId) {
-      console.log("dispositivo não conectado (AtivaArea2)");
-      Alert.alert(
-        'Dispositivo não conectado',
-        'Certifique-se que o Bluetooth está ligado e o smartphone está conectado ao CIA',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Ok', onPress: () => navigation.navigate("Home") },
-        ]
-      );
-      return;
-    }
-    try {
-      const byte = ligado2 ? 1 : 0;
-      await BleManager.write(peripheralId, CIA_CONTROL_ENABLE, ENABLE_2, [byte]);
-      console.log("Área 2 atualizada ->", byte);
-    } catch (err) {
-      console.error("Erro AtivaArea2:", err);
-    }
-  };
+    let charUUID = '';
+    if (zona === 1) charUUID = ENABLE_1;
+    else if (zona === 2) charUUID = ENABLE_2;
+    else if (zona === 3) charUUID = ENABLE_3;
+    else return;
 
-  const AtivaArea3 = async () => {
-    if (!peripheralId) {
-      console.log("dispositivo não conectado (AtivaArea3)");
-      Alert.alert(
-        'Dispositivo não conectado',
-        'Certifique-se que o Bluetooth está ligado e o smartphone está conectado ao CIA',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Ok', onPress: () => navigation.navigate("Home") },
-        ]
-      );
-      return;
-    }
     try {
-      const byte = ligado3 ? 1 : 0;
-      await BleManager.write(peripheralId, CIA_CONTROL_ENABLE, ENABLE_3, [byte]);
-      console.log("Área 3 atualizada ->", byte);
+      await BleManager.write(peripheralId, CIA_CONTROL_ENABLE, charUUID, [valor ? 1 : 0]);
+      console.log(`Área ${zona} atualizada ->`, valor);
     } catch (err) {
-      console.error("Erro AtivaArea3:", err);
+      console.error(`Erro AtivaArea${zona}:`, err);
     }
   };
 
   // useEffects
-  useEffect(() => { AtivaArea1(); }, [ligado1, peripheralId]);
-  useEffect(() => { AtivaArea2(); }, [ligado2, peripheralId]);
-  useEffect(() => { AtivaArea3(); }, [ligado3, peripheralId]);
+ // useEffect(() => { AtivaArea1(); }, [ligado1, peripheralId]);
+ // useEffect(() => { AtivaArea2(); }, [ligado2, peripheralId]);
+ // useEffect(() => { AtivaArea3(); }, [ligado3, peripheralId]);
 
   useEffect(() => { ComandoBluetooth(1, valor1); }, [valor1, peripheralId]);
   useEffect(() => { ComandoBluetooth(2, valor2); }, [valor2, peripheralId]);
@@ -214,6 +190,7 @@ export default function TabTwoScreen() {
       const newEnable = novaCor1 === 'green' ? 1 : 0;
       setEnable1(newEnable);
       console.log("cor_1:", novaCor1, "-> will set enable1:", newEnable);
+      AtivaArea(1, newEnable);
       return novaCor1;
     });
   };
@@ -224,6 +201,7 @@ export default function TabTwoScreen() {
       const newEnable = novaCor2 === 'green' ? 1 : 0;
       setEnable2(newEnable);
       console.log("cor_2:", novaCor2, "-> will set enable2:", newEnable);
+      AtivaArea(2, newEnable);
       return novaCor2;
     });
   };
@@ -234,6 +212,7 @@ export default function TabTwoScreen() {
       const newEnable = novaCor3 === 'green' ? 1 : 0;
       setEnable3(newEnable);
       console.log("cor_3:", novaCor3, "-> will set enable3:", newEnable);
+      AtivaArea(3, newEnable);
       return novaCor3;
     });
   };

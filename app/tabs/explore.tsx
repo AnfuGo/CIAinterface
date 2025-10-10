@@ -6,6 +6,7 @@ import { usePeripheralContext } from './peripheralContext';
 import BleManager from 'react-native-ble-manager';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { ModalSeguranca } from "./ModalSeguranca";
 
 // UUIDs
 const CIA_CONTROL_ENABLE = "22086d8b-57c2-4eb4-b82d-4b7936413e78";
@@ -20,6 +21,9 @@ const AlTemp_3 = "e49b8658-6f76-43dd-a36e-db7f4b1aa546";
 export default function TabTwoScreen() {
   // ---- REF para controlar o alerta automático (montagem)
   const mountAlertShownRef = useRef(false);
+
+  // Estado do modal de segurança
+  const [mostrarModalSeguranca, setMostrarModalSeguranca] = useState(false);
 
   // Alerta único na montagem (executa 1 vez)
   useEffect(() => {
@@ -38,6 +42,8 @@ export default function TabTwoScreen() {
     // NOTE: deps vazias para rodar somente na montagem e checar o valor inicial de peripheralId
   }, []);
   // Estados
+  const [security, setSecurity] = useState(0); 
+
   const { peripheralId } = usePeripheralContext();
   const [valor1, setValor1] = useState(25);
   const [valor2, setValor2] = useState(25);
@@ -63,6 +69,77 @@ export default function TabTwoScreen() {
   type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'TabTwo'>;
   const navigation = useNavigation<NavigationProp>();
 
+  // Timer de segurança
+useEffect(() => {
+  let timer: NodeJS.Timeout;
+  if ((ligado1 || ligado2 || ligado3) && peripheralId) {
+    // Espera 1 minuto para mostrar o alerta
+    timer = setTimeout(() => {
+      setSecurity(1);
+      setMostrarModalSeguranca(true);
+    }, 60000);
+  }
+  return () => clearTimeout(timer);
+}, [ligado1, ligado2, ligado3, peripheralId]);
+
+// Ação ao confirmar no modal
+const confirmarSeguranca = () => {
+  console.log("Usuário respondeu ao alerta de segurança");
+  setSecurity(0);
+  setMostrarModalSeguranca(false);
+};
+
+// Ação quando o tempo expira
+const tempoEsgotado = () => {
+  if (security) {
+    console.log("Tempo expirado! Executando ação de segurança...");
+    setMostrarModalSeguranca(false);
+    executarAcaoDeSeguranca();
+  }
+};
+
+// Função de segurança
+//const Alerta_temp = () => {
+//  Alert.alert(
+//    "Percebemos que você está muito tempo com o dispositivo ligado",
+//    "Ainda está aí?",
+//    [
+//      {
+//        text: "Claro...",
+//        onPress: () => {
+//          setSecurity(0);
+//          console.log("Usuário respondeu: ainda está aí.");
+//        },
+//      },
+//    ]
+//  );
+
+//  console.log("Alerta de tempo de exposição muito alto");
+
+//  // Após 30 segundos do alerta, executa a ação de segurança
+//  const tempoDeEspera = 30000; // 30 segundos
+
+//  setTimeout(() => {
+    // Se o usuário não respondeu (security ainda está ativo)
+//    if (security) {
+//      // Espera um pequeno delay para garantir que o primeiro alerta foi fechado
+//      setTimeout(() => {
+//        executarAcaoDeSeguranca();
+//      }, 500);
+//    }
+//  }, tempoDeEspera);
+//};
+
+// Ação de segurança
+const executarAcaoDeSeguranca = () => {
+  console.log("Tempo expirado! Executando ação de segurança...");
+  AtivaArea(1, 0);
+  AtivaArea(2, 0);
+  AtivaArea(3, 0);
+
+   //Mostra o alerta de segurança
+  Alert.alert("O dispositivo foi desligado por segurança.");
+};
   // Função centralizada para validar antes de alterar valores
   const safeSetValor = (zona: number, updater: (prev: number) => number) => {
     if (!peripheralId && mountAlertShownRef.current) {
@@ -175,11 +252,19 @@ export default function TabTwoScreen() {
 
   useEffect(() => {
     let intervalo: ReturnType<typeof setInterval>;
+//    let intervalo_comando: ReturnType<typeof setInterval>;
     if (peripheralId) {
       intervalo = setInterval(() => {
         lerTemperatura();
       }, 3000);
+      
     }
+//   if ((ligado1 || ligado2 || ligado3) && peripheralId) {
+//     setInterval(() => {
+//       setSecurity(1);
+//     }, 60000)
+//   }
+
     return () => clearInterval(intervalo);
   }, [peripheralId]);
 
@@ -301,6 +386,11 @@ export default function TabTwoScreen() {
           <ThemedText style={styles.valorTexto}>{Sensor3} °C</ThemedText>
         </View>
       </View>
+      <ModalSeguranca
+        visivel={mostrarModalSeguranca}
+        onConfirmar={confirmarSeguranca}
+        onTimeout={tempoEsgotado}
+      />
     </View>
   );
 }

@@ -7,6 +7,7 @@ import BleManager from 'react-native-ble-manager';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ModalSeguranca } from "./ModalSeguranca";
+import BleEventWatcher from './BleEventWatcher';
 
 // UUIDs
 const CIA_CONTROL_ENABLE = "22086d8b-57c2-4eb4-b82d-4b7936413e78";

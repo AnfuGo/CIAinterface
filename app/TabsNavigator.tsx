@@ -5,12 +5,13 @@ import TabOneScreen from './tabs/index';
 import TabTwoScreen from './tabs/explore'; 
 import { Image, StyleSheet } from 'react-native';
 import { PeripheralProvider } from './tabs/peripheralContext';
-
+import BleEventWatcher from './tabs/BleEventWatcher';
 const Tab = createBottomTabNavigator();
 
 export default function TabsNavigator() {
   return (
     <PeripheralProvider>
+      <BleEventWatcher/>
       <NavigationContainer>
         <Tab.Navigator screenOptions={{ headerShown: false }}>
           <Tab.Screen

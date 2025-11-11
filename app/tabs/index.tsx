@@ -5,6 +5,7 @@ import ParallaxScrollView from 'components/ParallaxScrollView';
 import { ThemedText } from 'components/ThemedText';
 import { ThemedView } from 'components/ThemedView';
 import { BluetoothConnection } from './Bluetooth'; 
+import BleEventWatcher from './BleEventWatcher';
 
 export const CameraPermission = async () => {
   const permission = PermissionsAndroid.PERMISSIONS.CAMERA;
@@ -97,6 +98,7 @@ export default function HomeScreen() {
   const [showBluetooth, setShowBluetooth] = useState(false);
 
   return (
+    
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#eee' }}
       headerImage={

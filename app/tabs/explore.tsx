@@ -234,7 +234,7 @@ export default function TabTwoScreen() {
       </ThemedView>
 
       <ThemedView style={[styles.titleContainer, { justifyContent: "center" }]}>
-        <ThemedText type="default" style={styles.color}>Área Traseira de aquecimento</ThemedText>
+        <ThemedText type="default" style={styles.color}>Área Frontal de aquecimento</ThemedText>
       </ThemedView>
       <View style={styles.titleContainer}>
         <Pressable onPress={TrocaCor} style={[styles.button, { backgroundColor: bt1Color }]}>
@@ -252,7 +252,7 @@ export default function TabTwoScreen() {
       </View>
 
       <ThemedView style={[styles.titleContainer, { justifyContent: "center" }]}>
-        <ThemedText type="default" style={styles.color}>Área lateral esquerda de aquecimento</ThemedText>
+        <ThemedText type="default" style={styles.color}>Área lateral direita de aquecimento</ThemedText>
       </ThemedView>
       <View style={styles.titleContainer}>
         <Pressable onPress={TrocaCor2} style={[styles.button, { backgroundColor: bt2Color }]}>
@@ -270,7 +270,7 @@ export default function TabTwoScreen() {
       </View>
 
       <ThemedView style={[styles.titleContainer, { justifyContent: "center" }]}>
-        <ThemedText type="default" style={styles.color}>Área lateral direita de aquecimento</ThemedText>
+        <ThemedText type="default" style={styles.color}>Área lateral esquerda de aquecimento</ThemedText>
       </ThemedView>
       <View style={styles.titleContainer}>
         <Pressable onPress={TrocaCor3} style={[styles.button, { backgroundColor: bt3Color }]}>
